@@ -3,15 +3,20 @@ package httpapi
 import (
 	"context"
 	"net/http"
-	"regexp"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/example/currency-watcher/backend/internal/rates"
 )
+
 // RateSource provides cached exchange rates to HTTP handlers.
 type RateSource interface {
 	Get(ctx context.Context, base string, targets []string) (map[string]float64, error)
+}
+
+// CurrencySource provides provider-supported currencies to HTTP handlers.
+type CurrencySource interface {
+	FetchCurrencies(ctx context.Context) ([]rates.Currency, error)
 }
 
 type HealthOutput struct {
@@ -20,20 +25,36 @@ type HealthOutput struct {
 	}
 }
 
+type currencyCode string
+
+func (currencyCode) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{
+		Type:        "string",
+		Pattern:     "^[A-Z]{3}$",
+		Description: "three uppercase ASCII letters",
+	}
+}
+
 type RatesInput struct {
-	Base    string `query:"base" required:"true"`
-	Targets string `query:"targets" required:"true"`
+	Base    currencyCode   `query:"base" required:"true"`
+	Targets []currencyCode `query:"targets" required:"true" minItems:"1" uniqueItems:"true"`
 }
 
 type RatesOutput struct {
-	Body struct {
+	ContentType string `header:"Content-Type"`
+	Body        struct {
 		Base  string             `json:"base"`
 		Rates map[string]float64 `json:"rates"`
 	}
 }
 
+type CurrenciesOutput struct {
+	ContentType string           `header:"Content-Type"`
+	Body        []rates.Currency `json:"body"`
+}
+
 // NewAPI builds the service routes on the provided standard-library mux.
-func NewAPI(mux *http.ServeMux, fetcher RateSource) huma.API {
+func NewAPI(mux *http.ServeMux, rateSource RateSource, currencySource CurrencySource) huma.API {
 	api := humago.NewWithPrefix(mux, "/api", huma.DefaultConfig("Currency Watcher API", "0.1.0"))
 	huma.Register(api, huma.Operation{
 		OperationID: "getHealth",
@@ -48,44 +69,38 @@ func NewAPI(mux *http.ServeMux, fetcher RateSource) huma.API {
 		OperationID: "getRates",
 		Method:      http.MethodGet,
 		Path:        "/rates",
-	}, ratesHandler(fetcher))
+	}, ratesHandler(rateSource))
+	huma.Register(api, huma.Operation{
+		OperationID: "getCurrencies",
+		Method:      http.MethodGet,
+		Path:        "/currencies",
+	}, currenciesHandler(currencySource))
 	return api
 }
 
-var currencyCodePattern = regexp.MustCompile(`^[A-Z]{3}$`)
-
-func ratesHandler(fetcher RateSource) func(context.Context, *RatesInput) (*RatesOutput, error) {
+func ratesHandler(rateSource RateSource) func(context.Context, *RatesInput) (*RatesOutput, error) {
 	return func(ctx context.Context, input *RatesInput) (*RatesOutput, error) {
-		base := input.Base
-		if !currencyCodePattern.MatchString(base) {
-			return nil, huma.Error422UnprocessableEntity("base must be exactly three uppercase ASCII letters")
+		targets := make([]string, len(input.Targets))
+		for i, target := range input.Targets {
+			targets[i] = string(target)
 		}
-		rawTargets := strings.Split(input.Targets, ",")
-		if len(rawTargets) == 0 || (len(rawTargets) == 1 && rawTargets[0] == "") {
-			return nil, huma.Error422UnprocessableEntity("targets must not be empty")
-		}
-		seen := make(map[string]struct{}, len(rawTargets))
-		targets := make([]string, 0, len(rawTargets))
-		for _, target := range rawTargets {
-			if !currencyCodePattern.MatchString(target) {
-				return nil, huma.Error422UnprocessableEntity("each target must be exactly three uppercase ASCII letters")
-			}
-			if _, duplicate := seen[target]; duplicate {
-				return nil, huma.Error422UnprocessableEntity("targets must not contain duplicates")
-			}
-			seen[target] = struct{}{}
-			targets = append(targets, target)
-		}
-		if base == "" || len(targets) == 0 {
-			return nil, huma.Error422UnprocessableEntity("base and targets are required")
-		}
-		result, err := fetcher.Get(ctx, base, targets)
+		result, err := rateSource.Get(ctx, string(input.Base), targets)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("unable to fetch exchange rates")
 		}
-		output := &RatesOutput{}
-		output.Body.Base = base
+		output := &RatesOutput{ContentType: "application/json"}
+		output.Body.Base = string(input.Base)
 		output.Body.Rates = result
 		return output, nil
+	}
+}
+
+func currenciesHandler(currencySource CurrencySource) func(context.Context, *struct{}) (*CurrenciesOutput, error) {
+	return func(ctx context.Context, _ *struct{}) (*CurrenciesOutput, error) {
+		currencies, err := currencySource.FetchCurrencies(ctx)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("unable to fetch currencies")
+		}
+		return &CurrenciesOutput{ContentType: "application/json", Body: currencies}, nil
 	}
 }

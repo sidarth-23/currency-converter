@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/example/currency-watcher/backend/internal/frankfurterclient"
+	"github.com/example/currency-watcher/backend/internal/generated"
 	"github.com/example/currency-watcher/backend/internal/httpapi"
 	"github.com/example/currency-watcher/backend/internal/rates"
 )
@@ -16,14 +16,14 @@ func main() {
 	baseURL := envOrDefault("FRANKFURTER_BASE_URL", "https://api.frankfurter.dev/v2")
 	origins := configuredOrigins(envOrDefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000"))
 
-	client, err := frankfurterclient.NewClient(baseURL)
+	client, err := generated.NewClient(baseURL)
 	if err != nil {
 		log.Fatalf("create Frankfurter client: %v", err)
 	}
 	fetcher := rates.NewFrankfurterFetcher(client)
 	cache := rates.NewCache(fetcher)
 	mux := http.NewServeMux()
-	httpapi.NewAPI(mux, cache)
+	httpapi.NewAPI(mux, cache, fetcher)
 
 	server := &http.Server{
 		Addr:    ":" + port,

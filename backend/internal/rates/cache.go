@@ -3,6 +3,8 @@ package rates
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -51,10 +53,7 @@ func (c *Cache) Get(ctx context.Context, base string, targets []string) (map[str
 	if c == nil || c.fetcher == nil {
 		return nil, fmt.Errorf("rate cache fetcher is nil")
 	}
-	key, normalizedBase, normalizedTargets, err := normalizeKey(base, targets)
-	if err != nil {
-		return nil, err
-	}
+	key := cacheKey(base, targets)
 
 	c.mu.Lock()
 	if entry, ok := c.entries[key]; ok && c.now().Before(entry.expiresAt) {
@@ -75,7 +74,7 @@ func (c *Cache) Get(ctx context.Context, base string, targets []string) (map[str
 	c.inFlight[key] = call
 	c.mu.Unlock()
 
-	rates, fetchErr := c.fetcher.Fetch(ctx, normalizedBase, normalizedTargets)
+	rates, fetchErr := c.fetcher.Fetch(ctx, base, targets)
 	if fetchErr == nil {
 		rates = cloneRates(rates)
 	}
@@ -101,4 +100,10 @@ func cloneRates(rates map[string]float64) map[string]float64 {
 		copyRates[key] = value
 	}
 	return copyRates
+}
+
+func cacheKey(base string, targets []string) string {
+	sortedTargets := append([]string(nil), targets...)
+	sort.Strings(sortedTargets)
+	return base + "|" + strings.Join(sortedTargets, ",")
 }

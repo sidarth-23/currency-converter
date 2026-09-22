@@ -1,24 +1,37 @@
-import { client } from "./generated/client.gen"
-import { getRatesOptions } from "./generated/@tanstack/react-query.gen"
-import type { ClientOptions, GetRatesData } from "./generated/types.gen"
+import { env } from "@/env"
 
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
+import { client } from "./generated/client.gen"
+import {
+  getCurrenciesOptions,
+  getRatesOptions,
+} from "./generated/@tanstack/react-query.gen"
+import type {
+  ClientOptions,
+  Currency as CurrencyRecord,
+  GetRatesData,
+} from "./generated/types.gen"
+
+export type { CurrencyRecord }
+
+const configuredBaseUrl = env.VITE_API_BASE_URL
 const apiConfig: ClientOptions = {
   baseUrl: `${configuredBaseUrl.replace(/\/$/, "")}/api`,
 }
 
 client.setConfig(apiConfig)
 
-export function getRatesQueryOptions(
-  base: string,
-  targets: readonly string[],
-) {
+export function getRatesQueryOptions(base: string, targets: readonly string[]) {
   const request: GetRatesData = {
     query: {
       base,
-      targets: targets.join(","),
+      targets: [...targets],
     },
+    url: "/rates",
   }
 
   return getRatesOptions(request)
+}
+
+export function getCurrenciesQueryOptions() {
+  return getCurrenciesOptions()
 }

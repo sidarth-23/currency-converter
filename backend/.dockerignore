@@ -1,8 +1,0 @@
-**/*_test.go
-tmp/
-*.test
-*.out
-bin/
-*.exe
-.git/
-.gitignore

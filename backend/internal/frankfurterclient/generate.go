@@ -1,4 +1,0 @@
-// Package frankfurterclient contains the generated Frankfurter API client.
-package frankfurterclient
-
-//go:generate sh -c "rm -f /tmp/currency-watcher-frankfurter-ogen.json; jq 'walk(if type == \"object\" and (.exclusiveMinimum? | type) == \"number\" then .minimum = .exclusiveMinimum | .exclusiveMinimum = true else . end) | .paths |= with_entries(select(.key == \"/rates\")) | .paths[\"/rates\"].get.responses.default = {description: \"Unexpected response\", content: {\"application/json\": {schema: {type: \"string\"}}}}' ../../../contract/frankfurter/v2/openapi.json > /tmp/currency-watcher-frankfurter-ogen.json && if go run github.com/ogen-go/ogen/cmd/ogen -target . -package frankfurterclient /tmp/currency-watcher-frankfurter-ogen.json; then rm -f /tmp/currency-watcher-frankfurter-ogen.json; else rm -f /tmp/currency-watcher-frankfurter-ogen.json; false; fi"

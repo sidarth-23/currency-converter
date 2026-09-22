@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - backend/**
-      - contract/**
+      - frontend/**
       - terraform/**
       - .github/workflows/deploy.yml
 
@@ -17,6 +17,8 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
   APP_RUNNER_SERVICE_ARN: ${{ vars.APP_RUNNER_SERVICE_ARN }}
+  FRANKFURTER_OPENAPI_URL: ${{ vars.FRANKFURTER_OPENAPI_URL }}
+  VITE_API_BASE_URL: http://127.0.0.1:8080
 
 jobs:
   deploy:
@@ -27,29 +29,39 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache: true
-      - name: Test backend
-        working-directory: backend
-        run: go test ./...
-      - name: Regenerate committed contracts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+      - name: Install frontend dependencies
         run: |
-          go -C backend generate ./...
+          corepack enable
+          corepack prepare pnpm@11.23.0 --activate
           pnpm --dir frontend install --frozen-lockfile
+      - name: Generate API clients and test
+        run: |
+          set -euo pipefail
+          go -C backend generate ./...
+          go -C backend run ./cmd/server &
+          backend_pid=$!
+          trap 'kill "$backend_pid" 2>/dev/null || true; wait "$backend_pid" 2>/dev/null || true' EXIT
+          curl --fail --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:8080/api/openapi.json
           pnpm --dir frontend run generate:api
-          git diff --exit-code -- contract backend/internal/frankfurterclient frontend/src/lib/api/generated
-      - name: Build frontend
-        working-directory: frontend
-        run: pnpm run build
+          go -C backend test ./...
+          pnpm --dir frontend run typecheck
+          pnpm --dir frontend test
+          pnpm --dir frontend run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-      - uses: aws-actions/amazon-ecr-login@v2
+      - id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       - name: Build and push image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           SHA_TAG: sha-${{ github.sha }}
         run: |
-          docker build -f backend/Dockerfile -t "$REGISTRY/$ECR_REPOSITORY:latest" -t "$REGISTRY/$ECR_REPOSITORY:$SHA_TAG" backend
+          docker build -f backend/Dockerfile -t "$REGISTRY/$ECR_REPOSITORY:latest" -t "$REGISTRY/$ECR_REPOSITORY:$SHA_TAG" .
           docker push "$REGISTRY/$ECR_REPOSITORY:latest"
           docker push "$REGISTRY/$ECR_REPOSITORY:$SHA_TAG"
       - name: Wait for App Runner

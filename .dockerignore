@@ -1,0 +1,4 @@
+*
+!backend/
+!backend/**
+backend/internal/generated/oas_*_gen.go

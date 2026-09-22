@@ -8,14 +8,18 @@ import (
 )
 
 type fakeFetcher struct {
-	mu    sync.Mutex
-	calls int
-	block <-chan struct{}
+	mu      sync.Mutex
+	calls   int
+	base    string
+	targets []string
+	block   <-chan struct{}
 }
 
 func (f *fakeFetcher) Fetch(ctx context.Context, base string, targets []string) (map[string]float64, error) {
 	f.mu.Lock()
 	f.calls++
+	f.base = base
+	f.targets = append([]string(nil), targets...)
 	f.mu.Unlock()
 	if f.block != nil {
 		select {
@@ -33,10 +37,16 @@ func (f *fakeFetcher) Calls() int {
 	return f.calls
 }
 
+func (f *fakeFetcher) Request() (string, []string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.base, append([]string(nil), f.targets...)
+}
+
 func TestCacheHitAndCopySafety(t *testing.T) {
 	fetcher := &fakeFetcher{}
 	cache := NewCacheWithTTL(fetcher, time.Hour)
-	first, err := cache.Get(context.Background(), "usd", []string{"SGD", "EUR"})
+	first, err := cache.Get(context.Background(), "USD", []string{"SGD", "EUR"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +60,10 @@ func TestCacheHitAndCopySafety(t *testing.T) {
 	}
 	if fetcher.Calls() != 1 {
 		t.Fatalf("expected one fetch, got %d", fetcher.Calls())
+	}
+	base, targets := fetcher.Request()
+	if base != "USD" || len(targets) != 2 || targets[0] != "SGD" || targets[1] != "EUR" {
+		t.Fatalf("fetcher received normalized request: %q %#v", base, targets)
 	}
 }
 
