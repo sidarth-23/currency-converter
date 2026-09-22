@@ -77,6 +77,7 @@ func (s *RateService) Get(ctx context.Context, base string, targets []string) (m
 	return cloneCachedRates(cachedRates), err
 }
 
+// get reads fresh cached rates, fetches and validates missing targets, then persists the new entries.
 func (s *RateService) get(ctx context.Context, base string, targets []string) (map[string]CachedRate, error) {
 	now := s.now()
 	rates, err := s.store.FindFresh(ctx, base, targets, now)
@@ -115,6 +116,7 @@ func (s *RateService) get(ctx context.Context, base string, targets []string) (m
 	return rates, nil
 }
 
+// validateFetchedRates rejects provider results that omit any requested target.
 func validateFetchedRates(fetched map[string]float64, targets []string) error {
 	for _, target := range targets {
 		if _, ok := fetched[target]; !ok {
@@ -124,6 +126,7 @@ func validateFetchedRates(fetched map[string]float64, targets []string) error {
 	return nil
 }
 
+// cloneCachedRates returns an independent copy so callers cannot mutate shared rate maps.
 func cloneCachedRates(rates map[string]CachedRate) map[string]CachedRate {
 	if rates == nil {
 		return nil
@@ -133,6 +136,7 @@ func cloneCachedRates(rates map[string]CachedRate) map[string]CachedRate {
 	return copyRates
 }
 
+// rateKey builds an order-independent key for coalescing requests with the same base and targets.
 func rateKey(base string, targets []string) string {
 	sortedTargets := append([]string(nil), targets...)
 	sort.Strings(sortedTargets)

@@ -15,6 +15,7 @@ import type { RatesOutputBody } from "@/lib/api/generated"
 
 type Rates = RatesOutputBody["rates"]
 
+/** earliestExpiry returns the earliest valid rate expiry, or undefined when no usable rate is present. */
 function earliestExpiry(rates: Rates | undefined) {
   let earliest: number | undefined
   for (const { expiresAt } of Object.values(rates ?? {})) {
@@ -29,11 +30,13 @@ function earliestExpiry(rates: Rates | undefined) {
   return earliest
 }
 
+/** hasExpiredRate reports whether the earliest valid rate has expired; missing rates are not expired. */
 function hasExpiredRate(rates: Rates | undefined) {
   const expiry = earliestExpiry(rates)
   return expiry !== undefined && expiry <= Date.now()
 }
 
+/** nextRefetchDelay schedules the earliest expiry with a one-millisecond minimum, or disables scheduling when rates are absent. */
 function nextRefetchDelay(rates: Rates | undefined) {
   const expiry = earliestExpiry(rates)
   return expiry === undefined ? false : Math.max(expiry - Date.now(), 1)
@@ -47,6 +50,7 @@ type RateGroupProps = {
   onRemove: (pair: WatchPair) => Promise<void>
 }
 
+/** RateGroup renders one base currency's rates and refetches when cached results expire or refresh failures retry. */
 export function RateGroup({ base, pairs, onRemove }: RateGroupProps) {
   const targets = pairs.map((pair) => pair.target)
   const ratesQuery = useQuery({

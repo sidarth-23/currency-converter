@@ -43,10 +43,12 @@ export const Route = createRootRouteWithContext<{
   component: RootLayout,
 })
 
+/** RootLayout renders the active route outlet within the root route. */
 function RootLayout() {
   return <Outlet />
 }
 
+/** RootDocument provides the HTML shell, route head content, scripts, and development tools. */
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { cn } from "cn"
 
+/** Label renders a semantic form label that reflects disabled control state. */
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label

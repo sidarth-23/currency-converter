@@ -30,6 +30,7 @@ type WatchPairFormProps = {
   onAdd: (pair: WatchPair) => Promise<void>
 }
 
+/** defaultWatchPair prefers USD-to-EUR when available, otherwise selects the first two currency options. */
 function defaultWatchPair(options: readonly CurrencyOption[]): WatchPair {
   const codes = new Set(options.map((option) => option.code))
   if (codes.has("USD") && codes.has("EUR")) {
@@ -38,6 +39,7 @@ function defaultWatchPair(options: readonly CurrencyOption[]): WatchPair {
   return { base: options[0]!.code, target: options[1]!.code }
 }
 
+/** createWatchPairSchema validates that a pair uses distinct currencies and is not already persisted. */
 export function createWatchPairSchema(pairs: readonly WatchPair[]) {
   return z
     .object({
@@ -66,6 +68,7 @@ export function createWatchPairSchema(pairs: readonly WatchPair[]) {
     })
 }
 
+/** WatchPairForm collects a new pair, validates it as selections change and submit, then persists it through onAdd. */
 export function WatchPairForm({ options, pairs, onAdd }: WatchPairFormProps) {
   const [open, setOpen] = useState(false)
   const schema = useMemo(() => createWatchPairSchema(pairs), [pairs])

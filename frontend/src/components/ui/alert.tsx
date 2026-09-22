@@ -18,6 +18,7 @@ const alertVariants = cva(
   }
 )
 
+/** Alert renders an accessible status container with default or destructive variants. */
 function Alert({
   className,
   variant,
@@ -33,6 +34,7 @@ function Alert({
   )
 }
 
+/** AlertTitle renders the alert's semantic heading. */
 function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -46,6 +48,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** AlertDescription renders supporting alert content. */
 function AlertDescription({
   className,
   ...props
@@ -62,6 +65,7 @@ function AlertDescription({
   )
 }
 
+/** AlertAction renders an optional action region within an alert. */
 function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

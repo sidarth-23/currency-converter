@@ -8,6 +8,7 @@ import (
 	"github.com/example/currency-watcher/backend/internal/server"
 )
 
+// main starts the HTTP API and terminates the process when initialization or serving fails unexpectedly.
 func main() {
 	httpServer, err := server.NewHTTPServer(config.Load())
 	if err != nil {

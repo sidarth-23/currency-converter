@@ -5,6 +5,7 @@ export type CurrencyOption = {
   name: string
 }
 
+/** joinCurrencies maps API records to code-and-name options sorted by currency code. */
 export function joinCurrencies(
   currencies: readonly CurrencyRecord[]
 ): CurrencyOption[] {

@@ -7,6 +7,7 @@ import { cn } from "cn"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 
+/** FieldSet groups related form controls in a semantic fieldset. */
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
     <fieldset
@@ -20,6 +21,7 @@ function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   )
 }
 
+/** FieldLegend labels a fieldset with legend or label-sized text. */
 function FieldLegend({
   className,
   variant = "legend",
@@ -38,6 +40,7 @@ function FieldLegend({
   )
 }
 
+/** FieldGroup stacks related field layout primitives. */
 function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -69,6 +72,7 @@ const fieldVariants = cva(
   }
 )
 
+/** Field groups a control and its metadata with vertical, horizontal, or responsive orientation. */
 function Field({
   className,
   orientation = "vertical",
@@ -85,6 +89,7 @@ function Field({
   )
 }
 
+/** FieldContent groups a field's title, description, and control content. */
 function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -98,6 +103,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** FieldLabel labels a control and reflects its disabled and checked state. */
 function FieldLabel({
   className,
   ...props
@@ -115,6 +121,7 @@ function FieldLabel({
   )
 }
 
+/** FieldTitle renders a field heading when a label element is not appropriate. */
 function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -128,6 +135,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** FieldDescription renders supplementary guidance for a field. */
 function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
@@ -143,6 +151,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
+/** FieldSeparator separates field sections and can overlay a text label. */
 function FieldSeparator({
   children,
   className,
@@ -173,6 +182,7 @@ function FieldSeparator({
   )
 }
 
+/** FieldError renders explicit children or deduplicated validation messages as an alert. */
 function FieldError({
   className,
   children,

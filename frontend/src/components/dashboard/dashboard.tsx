@@ -30,6 +30,7 @@ type WatchlistHeaderProps = {
   watchPairCount?: number
 }
 
+/** WatchlistHeader renders the watchlist heading and optional persisted-pair count. */
 function WatchlistHeader({ watchPairCount }: WatchlistHeaderProps) {
   return (
     <header className="flex flex-col gap-3">
@@ -91,6 +92,7 @@ const watchlistLoadingCard = (
   </Card>
 )
 
+/** WatchlistLoading renders accessible watchlist placeholders while browser persistence is loading. */
 function WatchlistLoading() {
   return (
     <>
@@ -100,6 +102,7 @@ function WatchlistLoading() {
   )
 }
 
+/** DashboardLoading renders the dashboard shell while its currency catalog is pending. */
 export function DashboardLoading() {
   return (
     <DashboardShell>
@@ -108,6 +111,7 @@ export function DashboardLoading() {
   )
 }
 
+/** DashboardUnavailable renders the unavailable state when fewer than two currencies can be selected. */
 export function DashboardUnavailable() {
   return (
     <DashboardShell>
@@ -119,6 +123,7 @@ export function DashboardUnavailable() {
   )
 }
 
+/** DashboardShell provides the shared full-page layout for dashboard states. */
 function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-svh bg-muted/30 px-4 py-10 sm:px-8">
@@ -129,6 +134,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
   )
 }
 
+/** Dashboard loads currency options and defers browser-only watchlist persistence to the client. */
 export function Dashboard() {
   const { data: currencies } = useSuspenseQuery(getCurrenciesQueryOptions())
   const options = useMemo(() => joinCurrencies(currencies ?? []), [currencies])
@@ -150,6 +156,7 @@ type WatchlistProps = {
   options: readonly CurrencyOption[]
 }
 
+/** Watchlist opens the persisted watchlist and renders its loading, failure, or live-data state. */
 function Watchlist({ options }: WatchlistProps) {
   const databaseQuery = useQuery({
     queryKey: ["watchlist-database"],
@@ -185,6 +192,7 @@ type WatchlistContentProps = WatchlistProps & {
   database: WatchlistDatabase
 }
 
+/** WatchlistContent groups live persisted pairs by base and wires pair mutations to the database. */
 function WatchlistContent({ database, options }: WatchlistContentProps) {
   const { results } = useLiveRxQuery<WatchPairDocument>({
     collection: "watchpairs",

@@ -54,6 +54,7 @@ export type WatchlistDatabase = RxDatabase<WatchlistCollections>
 
 let databasePromise: Promise<WatchlistDatabase> | undefined
 
+/** getWatchlistDatabase creates the singleton Dexie-backed watch-pair collection and reuses it thereafter. */
 export function getWatchlistDatabase(): Promise<WatchlistDatabase> {
   databasePromise ??= createRxDatabase<WatchlistCollections>({
     name: "currencywatcher",
@@ -68,6 +69,7 @@ export function getWatchlistDatabase(): Promise<WatchlistDatabase> {
   return databasePromise
 }
 
+/** addWatchPair persists a pair idempotently, leaving an existing exact pair unchanged. */
 export async function addWatchPair(
   database: WatchlistDatabase,
   pair: WatchPair
@@ -75,6 +77,7 @@ export async function addWatchPair(
   await database.watchpairs.insertIfNotExists(pair as WatchPairDocument)
 }
 
+/** removeWatchPair removes only the persisted document matching the exact base and target pair. */
 export async function removeWatchPair(
   database: WatchlistDatabase,
   pair: WatchPair

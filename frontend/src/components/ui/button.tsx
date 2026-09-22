@@ -39,6 +39,7 @@ const buttonVariants = cva(
   }
 )
 
+/** Button wraps the Base UI button with application variants and size options. */
 function Button({
   className,
   variant = "default",

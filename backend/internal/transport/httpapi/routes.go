@@ -28,6 +28,7 @@ type HealthOutput struct {
 
 type currencyCode string
 
+// Schema describes currencyCode as three uppercase ASCII letters in the generated HTTP schema.
 func (currencyCode) Schema(huma.Registry) *huma.Schema {
 	return &huma.Schema{
 		Type:        "string",
@@ -84,6 +85,7 @@ func NewAPI(mux *http.ServeMux, rateSource RateSource, currencySource CurrencySo
 	return api
 }
 
+// ratesHandler maps validated rate queries to JSON results and source failures to HTTP 500 responses.
 func ratesHandler(rateSource RateSource) func(context.Context, *RatesInput) (*RatesOutput, error) {
 	return func(ctx context.Context, input *RatesInput) (*RatesOutput, error) {
 		targets := make([]string, len(input.Targets))
@@ -107,6 +109,7 @@ func ratesHandler(rateSource RateSource) func(context.Context, *RatesInput) (*Ra
 	}
 }
 
+// currenciesHandler maps provider currencies to JSON results and source failures to HTTP 500 responses.
 func currenciesHandler(currencySource CurrencySource) func(context.Context, *struct{}) (*CurrenciesOutput, error) {
 	return func(ctx context.Context, _ *struct{}) (*CurrenciesOutput, error) {
 		currencies, err := currencySource.FetchCurrencies(ctx)

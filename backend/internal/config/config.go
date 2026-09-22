@@ -30,6 +30,7 @@ func Load() Config {
 	}
 }
 
+// envOrDefault returns the trimmed environment value or the fallback when the variable is blank.
 func envOrDefault(name, fallback string) string {
 	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
 		return value
@@ -37,6 +38,7 @@ func envOrDefault(name, fallback string) string {
 	return fallback
 }
 
+// configuredOrigins splits a comma-delimited origin list, trimming entries and discarding blanks.
 func configuredOrigins(value string) []string {
 	origins := make([]string, 0)
 	for _, origin := range strings.Split(value, ",") {

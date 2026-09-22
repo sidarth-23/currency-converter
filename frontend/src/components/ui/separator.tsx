@@ -1,6 +1,7 @@
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"
 import { cn } from "cn"
 
+/** Separator renders a horizontal-by-default semantic divider with vertical orientation support. */
 function Separator({
   className,
   orientation = "horizontal",

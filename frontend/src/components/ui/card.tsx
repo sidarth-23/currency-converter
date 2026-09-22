@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "cn"
 
+/** Card renders a bordered content container with default or compact sizing. */
 function Card({
   className,
   size = "default",
@@ -19,6 +20,7 @@ function Card({
   )
 }
 
+/** CardHeader renders the card's heading region. */
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -32,6 +34,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** CardTitle renders a card heading. */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -45,6 +48,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** CardDescription renders supporting card text. */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -55,6 +59,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** CardAction renders controls aligned with the card header. */
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -68,6 +73,7 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** CardContent renders the card's primary body. */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -78,6 +84,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** CardFooter renders the card's trailing action or metadata region. */
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
