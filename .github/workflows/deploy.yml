@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/**
+      - contract/**
+      - terraform/**
+      - .github/workflows/deploy.yml
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  APP_RUNNER_SERVICE_ARN: ${{ vars.APP_RUNNER_SERVICE_ARN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+      - name: Test backend
+        working-directory: backend
+        run: go test ./...
+      - name: Regenerate committed contracts
+        run: |
+          go -C backend generate ./...
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend run generate:api
+          git diff --exit-code -- contract backend/internal/frankfurterclient frontend/src/lib/api/generated
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: sha-${{ github.sha }}
+        run: |
+          docker build -f backend/Dockerfile -t "$REGISTRY/$ECR_REPOSITORY:latest" -t "$REGISTRY/$ECR_REPOSITORY:$SHA_TAG" backend
+          docker push "$REGISTRY/$ECR_REPOSITORY:latest"
+          docker push "$REGISTRY/$ECR_REPOSITORY:$SHA_TAG"
+      - name: Wait for App Runner
+        run: |
+          for attempt in $(seq 1 30); do
+            status=$(aws apprunner describe-service --service-arn "$APP_RUNNER_SERVICE_ARN" --query 'Service.Status' --output text)
+            test "$status" = "RUNNING" && exit 0
+            test "$status" = "CREATE_FAILED" -o "$status" = "UPDATE_FAILED" && exit 1
+            sleep 20
+          done
+          exit 1

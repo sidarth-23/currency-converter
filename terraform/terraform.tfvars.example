@@ -1,0 +1,5 @@
+aws_region        = "us-east-1"
+environment       = "production"
+app_name          = "currency-watcher"
+github_repository = "owner/repository"
+github_branch     = "main"
