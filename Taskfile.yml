@@ -1,0 +1,80 @@
+version: "3"
+
+tasks:
+  generate:backend:
+    desc: Generate the Frankfurter API client
+    dir: backend
+    cmds:
+      - go generate ./...
+
+  generate:frontend:
+    desc: Generate the frontend API client from the local backend
+    dir: frontend
+    cmds:
+      - |
+        bash -eu -c '
+          backend_binary=$(mktemp)
+          backend_pid=""
+
+          cleanup() {
+            if [ -n "$backend_pid" ]; then
+              kill "$backend_pid" 2>/dev/null || true
+              wait "$backend_pid" 2>/dev/null || true
+            fi
+            rm -f "$backend_binary"
+          }
+
+          if ! (cd ../backend && go build -o "$backend_binary" ./cmd/server); then
+            cleanup
+            exit 1
+          fi
+
+          PORT=8081 "$backend_binary" &
+          backend_pid=$!
+
+          attempts=0
+          until curl --fail --silent http://localhost:8081/api/openapi.json >/dev/null; do
+            if ! kill -0 "$backend_pid" 2>/dev/null; then
+              cleanup
+              exit 1
+            fi
+
+            attempts=$((attempts + 1))
+            if [ "$attempts" -ge 100 ]; then
+              echo "Timed out waiting for the backend API."
+              cleanup
+              exit 1
+            fi
+
+            sleep 0.1
+          done
+
+          status=0
+          VITE_API_BASE_URL=http://localhost:8081 pnpm run generate:api || status=$?
+          cleanup
+          exit "$status"
+        '
+
+  generate:
+    desc: Generate backend and frontend API clients
+    deps:
+      - generate:backend
+      - generate:frontend
+
+  backend:dev:
+    desc: Run the backend API
+    dir: backend
+    cmds:
+      - go run ./cmd/server
+
+  frontend:dev:
+    desc: Run the frontend development server
+    dir: frontend
+    cmds:
+      - pnpm exec vite dev --port "${FRONTEND_PORT:-3000}"
+
+  dev:
+    desc: Run the backend API and frontend development server
+    deps:
+      - backend:dev
+      - frontend:dev
