@@ -1,9 +1,8 @@
 import { defineConfig } from "@hey-api/openapi-ts"
 
-const apiBaseURL = (process.env.VITE_API_BASE_URL ?? "http://localhost:8080").replace(
-  /\/$/,
-  "",
-)
+const apiBaseURL = (
+  process.env.VITE_API_BASE_URL ?? "http://localhost:8080"
+).replace(/\/$/, "")
 
 export default defineConfig({
   input: `${apiBaseURL}/api/openapi.json`,

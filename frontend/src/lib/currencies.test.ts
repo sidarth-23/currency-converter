@@ -3,16 +3,17 @@ import { describe, expect, it } from "vitest"
 import { joinCurrencies } from "./currencies"
 
 describe("joinCurrencies", () => {
-  it("keeps provider-supported ISO currencies with provider names", () => {
+  it("retains provider records and names in code order", () => {
     expect(
       joinCurrencies([
         { code: "USD", name: "Provider dollar" },
-        { code: "EUR", name: "" },
+        { code: "EUR", name: "Provider euro" },
         { code: "ZZZ", name: "Unknown" },
       ])
     ).toEqual([
-      { code: "EUR", name: "Euro" },
+      { code: "EUR", name: "Provider euro" },
       { code: "USD", name: "Provider dollar" },
+      { code: "ZZZ", name: "Unknown" },
     ])
   })
 })

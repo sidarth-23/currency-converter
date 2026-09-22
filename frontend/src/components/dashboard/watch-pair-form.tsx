@@ -20,12 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { CurrencyOption } from "@/lib/currencies"
-import type { WatchPair } from "@/lib/watch-pairs"
+import type { WatchPair } from "@/lib/watchlist/database"
 
 type WatchPairFormProps = {
   options: readonly CurrencyOption[]
   pairs: readonly WatchPair[]
-  onAdd: (pair: WatchPair) => void
+  onAdd: (pair: WatchPair) => Promise<void>
 }
 
 function defaultWatchPair(options: readonly CurrencyOption[]): WatchPair {
@@ -72,7 +72,9 @@ export function WatchPairForm({ options, pairs, onAdd }: WatchPairFormProps) {
       onChange: schema,
       onSubmit: schema,
     },
-    onSubmit: ({ value }) => onAdd(value),
+    onSubmit: async ({ value }) => {
+      await onAdd(value)
+    },
   })
 
   return (

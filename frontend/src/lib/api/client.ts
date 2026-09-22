@@ -33,5 +33,8 @@ export function getRatesQueryOptions(base: string, targets: readonly string[]) {
 }
 
 export function getCurrenciesQueryOptions() {
-  return getCurrenciesOptions()
+  return {
+    ...getCurrenciesOptions(),
+    staleTime: 60 * 60 * 1000,
+  }
 }

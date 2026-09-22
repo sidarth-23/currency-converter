@@ -9,12 +9,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getRatesQueryOptions } from "@/lib/api/client"
-import type { WatchPair } from "@/lib/watch-pairs"
+import type { WatchPair } from "@/lib/watchlist/database"
 
 type RateGroupProps = {
   base: string
   pairs: readonly WatchPair[]
-  onRemove: (pair: WatchPair) => void
+  onRemove: (pair: WatchPair) => Promise<void>
 }
 
 export function RateGroup({ base, pairs, onRemove }: RateGroupProps) {
@@ -76,7 +76,9 @@ export function RateGroup({ base, pairs, onRemove }: RateGroupProps) {
                       variant="ghost"
                       size="sm"
                       aria-label={`Remove ${pair.base} to ${pair.target}`}
-                      onClick={() => onRemove(pair)}
+                      onClick={() => {
+                        void onRemove(pair)
+                      }}
                     >
                       Remove
                     </Button>
