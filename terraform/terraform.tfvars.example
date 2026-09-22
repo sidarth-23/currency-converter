@@ -3,3 +3,6 @@ environment       = "production"
 app_name          = "currency-watcher"
 github_repository = "owner/repository"
 github_branch     = "main"
+public_subnet_ids = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+initial_image_tag  = "sha-0123456789abcdef0123456789abcdef01234567"
+cors_allowed_origins = ["https://app.example.com"]

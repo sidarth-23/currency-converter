@@ -69,7 +69,7 @@ This is a good fit for one API process and a compact rate cache. Redis becomes a
 
 The frontend makes the parallel choice for user data: RxDB/IndexedDB replaces a `localStorage` blob with a validated collection, a composite key, an index, and queryable live updates. It is local to the browser profile; it is not synchronized across browsers or devices.
 
-> **Deployment note:** the default cache path is `/tmp/currency-watcher/rates.db`. In the supplied container and App Runner configuration it is an instance-local cache, so it may disappear when an instance is replaced. This only causes a later upstream refresh; watched pairs remain browser-local.
+> **Deployment note:** the default cache path is `/tmp/currency-watcher/rates.db`. In the supplied container and ECS Express configuration it is an instance-local cache, so it may disappear when an instance is replaced or traffic is shifted to another task. This only causes a later upstream refresh; watched pairs remain browser-local.
 
 ## HTTP API
 
@@ -182,9 +182,22 @@ Build and preview the frontend container:
 docker compose -f compose.frontend.yml up --build
 ```
 
-`terraform/` provisions the AWS deployment foundation for the backend: an ECR repository, ECR access role, App Runner service, and GitHub Actions OIDC role. Its App Runner health check calls `/api/health`.
+`terraform/` provisions the backend on Amazon ECS Express Mode: an immutable ECR repository, CloudWatch log group, ECS task-execution and Express-infrastructure roles, and a GitHub Actions OIDC role. Express Mode manages the Fargate service, HTTPS Application Load Balancer, minimal service/load-balancer security groups, health checks at `/api/health`, canary deployments, and CPU-based scaling. It requires at least two public subnets in distinct Availability Zones; supply those as `public_subnet_ids`. The running task has no task role because the API has no AWS API permissions.
 
-The GitHub Actions workflow runs code generation, backend tests, frontend type-checking/tests/build, then builds and pushes the **backend** image to ECR on pushes to `main`. App Runner auto-deploys the `latest` image. The Terraform and workflow configuration do not provision or publish a frontend hosting service; use the frontend compose file or provide frontend hosting separately.
+ECR images are immutable `sha-<Git commit>` tags. The first deployment has a deliberate bootstrap sequence: set `initial_image_tag` to the commit SHA that will be built, then run:
+
+```sh
+terraform -chdir=terraform init -upgrade
+terraform -chdir=terraform apply \
+  -target=aws_ecr_repository.app \
+  -target=aws_ecr_lifecycle_policy.app \
+  -target=aws_iam_openid_connect_provider.github \
+  -target=aws_iam_role.github_actions
+```
+
+This targeted apply is only for image bootstrapping. Configure the GitHub repository variables `AWS_REGION`, `ECR_REPOSITORY` (`<app_name>-<environment>`), and `AWS_DEPLOY_ROLE_ARN` from `github_actions_role_arn`; run the workflow manually on that commit to publish its image; then run a full `terraform -chdir=terraform apply`. Set `ECS_EXPRESS_SERVICE_ARN` from `ecs_express_service_arn` afterward. Subsequent workflow runs push an immutable image revision, update only that Express service, and wait for its canary deployment to become active. Terraform ignores later image changes because the workflow owns image revisions.
+
+The Terraform and workflow configuration do not provision or publish a frontend hosting service; use the frontend compose file or provide frontend hosting separately. Set its browser origin in `cors_allowed_origins` during the backend deployment.
 
 ## Project layout
 
@@ -201,6 +214,6 @@ frontend/
   src/stores/watchlist.ts             RxDB/Dexie IndexedDB store
   src/lib/api/                        generated client and query wrappers
   src/routes/                         TanStack Start route
-terraform/                            ECR, App Runner, and GitHub OIDC resources
+terraform/                            ECR, ECS Express, CloudWatch, and GitHub OIDC resources
 .github/workflows/deploy.yml          validate, build, push, and deploy backend
 ```

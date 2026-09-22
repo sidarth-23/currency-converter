@@ -2,8 +2,10 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml ./
+RUN printf 'packages: []\nallowBuilds:\n  esbuild: true\n  lightningcss: true\n  unrs-resolver: true\n  msw: false\n' > pnpm-workspace.yaml \
+    && corepack enable \
+    && pnpm install --frozen-lockfile
 
 COPY . ./
 
