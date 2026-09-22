@@ -2,20 +2,22 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/example/currency-watcher/backend/internal/rates"
 )
 
 type fakeRateSource struct {
-	rates map[string]float64
+	rates map[string]rates.CachedRate
 	err   error
 }
 
-func (f fakeRateSource) Get(context.Context, string, []string) (map[string]float64, error) {
+func (f fakeRateSource) Get(context.Context, string, []string) (map[string]rates.CachedRate, error) {
 	return f.rates, f.err
 }
 
@@ -29,8 +31,12 @@ func (f fakeCurrencySource) FetchCurrencies(context.Context) ([]rates.Currency, 
 }
 
 func TestHealthAndRatesRoutes(t *testing.T) {
+	expiresAt := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
 	mux := http.NewServeMux()
-	NewAPI(mux, fakeRateSource{rates: map[string]float64{"EUR": 0.85, "SGD": 1.35}}, fakeCurrencySource{})
+	NewAPI(mux, fakeRateSource{rates: map[string]rates.CachedRate{
+		"EUR": {Rate: 0.85, ExpiresAt: expiresAt},
+		"SGD": {Rate: 1.35, ExpiresAt: expiresAt},
+	}}, fakeCurrencySource{})
 
 	health := httptest.NewRecorder()
 	mux.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/api/health", nil))
@@ -38,16 +44,25 @@ func TestHealthAndRatesRoutes(t *testing.T) {
 		t.Fatalf("unexpected health response: %d %s", health.Code, health.Body.String())
 	}
 
-	rates := httptest.NewRecorder()
-	mux.ServeHTTP(rates, httptest.NewRequest(http.MethodGet, "/api/rates?base=USD&targets=EUR,SGD", nil))
-	if rates.Code != http.StatusOK {
-		t.Fatalf("unexpected rates status: %d %s", rates.Code, rates.Body.String())
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/rates?base=USD&targets=EUR,SGD", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("unexpected rates status: %d %s", response.Code, response.Body.String())
 	}
-	if !strings.Contains(rates.Body.String(), `"base":"USD"`) || !strings.Contains(rates.Body.String(), `"EUR":0.85`) {
-		t.Fatalf("unexpected rates response: %s", rates.Body.String())
+	var output struct {
+		Base  string                `json:"base"`
+		Rates map[string]RateOutput `json:"rates"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &output); err != nil {
+		t.Fatal(err)
+	}
+	if output.Base != "USD" || output.Rates["EUR"].Rate != 0.85 || !output.Rates["EUR"].ExpiresAt.Equal(expiresAt) {
+		t.Fatalf("unexpected rates response: %#v", output)
+	}
+	if !strings.Contains(response.Body.String(), `"expiresAt":"2026-01-02T03:04:05Z"`) {
+		t.Fatalf("expiry was not RFC 3339: %s", response.Body.String())
 	}
 }
-
 func TestRatesValidationAndUpstreamError(t *testing.T) {
 	for _, query := range []string{
 		"base=usd&targets=EUR",
@@ -56,7 +71,7 @@ func TestRatesValidationAndUpstreamError(t *testing.T) {
 		"base=USD&targets=",
 	} {
 		mux := http.NewServeMux()
-		NewAPI(mux, fakeRateSource{rates: map[string]float64{"EUR": 0.85}}, fakeCurrencySource{})
+		NewAPI(mux, fakeRateSource{rates: map[string]rates.CachedRate{"EUR": {Rate: 0.85}}}, fakeCurrencySource{})
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/rates?"+query, nil))
 		if response.Code != http.StatusUnprocessableEntity {

@@ -21,8 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { CurrencyOption } from "@/lib/currencies"
-import type { WatchPair } from "@/lib/watchlist/database"
+import type { WatchPair } from "@/stores/watchlist"
+import type { CurrencyOption } from "@/utils/currencies"
 
 type WatchPairFormProps = {
   options: readonly CurrencyOption[]

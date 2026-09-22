@@ -13,9 +13,9 @@ ARG FRANKFURTER_OPENAPI_URL=https://api.frankfurter.dev/v2/openapi.json
 ENV FRANKFURTER_OPENAPI_URL=$FRANKFURTER_OPENAPI_URL
 
 RUN go generate ./...
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o /out/currency-watcher ./cmd/server
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o /out/currency-watcher ./cmd/server
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/base-debian12:nonroot
 COPY --from=builder /out/currency-watcher /currency-watcher
 EXPOSE 8080
 ENTRYPOINT ["/currency-watcher"]

@@ -14,6 +14,7 @@ import (
 func main() {
 	port := envOrDefault("PORT", "8080")
 	baseURL := envOrDefault("FRANKFURTER_BASE_URL", "https://api.frankfurter.dev/v2")
+	cacheDatabasePath := envOrDefault("RATE_CACHE_DB_PATH", "/tmp/currency-watcher/rates.db")
 	origins := configuredOrigins(envOrDefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000"))
 
 	client, err := generated.NewClient(baseURL)
@@ -21,7 +22,10 @@ func main() {
 		log.Fatalf("create Frankfurter client: %v", err)
 	}
 	fetcher := rates.NewFrankfurterFetcher(client)
-	cache := rates.NewCache(fetcher)
+	cache, err := rates.NewCache(fetcher, cacheDatabasePath)
+	if err != nil {
+		log.Fatalf("create rate cache: %v", err)
+	}
 	mux := http.NewServeMux()
 	httpapi.NewAPI(mux, cache, fetcher)
 

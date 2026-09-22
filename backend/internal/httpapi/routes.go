@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
@@ -11,7 +12,7 @@ import (
 
 // RateSource provides cached exchange rates to HTTP handlers.
 type RateSource interface {
-	Get(ctx context.Context, base string, targets []string) (map[string]float64, error)
+	Get(ctx context.Context, base string, targets []string) (map[string]rates.CachedRate, error)
 }
 
 // CurrencySource provides provider-supported currencies to HTTP handlers.
@@ -40,11 +41,16 @@ type RatesInput struct {
 	Targets []currencyCode `query:"targets" required:"true" minItems:"1" uniqueItems:"true"`
 }
 
+type RateOutput struct {
+	Rate      float64   `json:"rate"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
 type RatesOutput struct {
 	ContentType string `header:"Content-Type"`
 	Body        struct {
-		Base  string             `json:"base"`
-		Rates map[string]float64 `json:"rates"`
+		Base  string                `json:"base"`
+		Rates map[string]RateOutput `json:"rates"`
 	}
 }
 
@@ -90,7 +96,13 @@ func ratesHandler(rateSource RateSource) func(context.Context, *RatesInput) (*Ra
 		}
 		output := &RatesOutput{ContentType: "application/json"}
 		output.Body.Base = string(input.Base)
-		output.Body.Rates = result
+		output.Body.Rates = make(map[string]RateOutput, len(result))
+		for target, cachedRate := range result {
+			output.Body.Rates[target] = RateOutput{
+				Rate:      cachedRate.Rate,
+				ExpiresAt: cachedRate.ExpiresAt,
+			}
+		}
 		return output, nil
 	}
 }

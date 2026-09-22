@@ -6,7 +6,7 @@ vi.mock("rxdb/plugins/storage-dexie", async () => {
   return { getRxStorageDexie: getRxStorageMemory }
 })
 
-import { addWatchPair, getWatchlistDatabase, removeWatchPair } from "./database"
+import { addWatchPair, getWatchlistDatabase, removeWatchPair } from "./watchlist"
 
 const database = await getWatchlistDatabase()
 

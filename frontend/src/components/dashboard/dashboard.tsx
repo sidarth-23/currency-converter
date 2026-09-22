@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrenciesQueryOptions } from "@/lib/api/client"
-import { joinCurrencies, type CurrencyOption } from "@/lib/currencies"
+import { joinCurrencies, type CurrencyOption } from "@/utils/currencies"
 import {
   addWatchPair,
   getWatchlistDatabase,
@@ -16,7 +16,7 @@ import {
   type WatchPair,
   type WatchPairDocument,
   type WatchlistDatabase,
-} from "@/lib/watchlist/database"
+} from "@/stores/watchlist"
 
 import { RateGroup } from "./rate-group"
 import { WatchPairForm } from "./watch-pair-form"
