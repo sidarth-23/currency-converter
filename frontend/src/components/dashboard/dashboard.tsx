@@ -6,6 +6,7 @@ import { RxDatabaseProvider, useLiveRxQuery } from "rxdb/plugins/react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getCurrenciesQueryOptions } from "@/lib/api/client"
 import { joinCurrencies, type CurrencyOption } from "@/lib/currencies"
 import {
@@ -26,9 +27,36 @@ const watchPairsQuery: MangoQuery<WatchPairDocument> = {
 }
 
 const watchlistLoadingCard = (
-  <Card>
-    <CardContent className="py-8 text-center text-muted-foreground">
-      Loading your watchlist…
+  <Card aria-busy="true">
+    <CardHeader>
+      <div aria-hidden="true" className="space-y-3">
+        <Skeleton className="h-3 w-20 rounded-full" />
+        <Skeleton className="h-8 w-48" />
+      </div>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div
+        aria-hidden="true"
+        className="overflow-hidden rounded-lg border border-border"
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-12 rounded-full" />
+            <Skeleton className="h-6 w-20" />
+          </div>
+          <Skeleton className="h-6 w-16" />
+        </div>
+        <div className="flex items-center justify-between px-5 py-4 sm:px-6">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-10" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <Skeleton className="h-6 w-20" />
+        </div>
+      </div>
+      <p className="sr-only" role="status" aria-label="Loading your watchlist…">
+        Loading your watchlist…
+      </p>
     </CardContent>
   </Card>
 )
@@ -171,7 +199,7 @@ function WatchlistContent({ database, options }: WatchlistContentProps) {
           <CardHeader className="items-center py-10 text-center">
             <CardTitle>No pairs yet</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Add a currency pair above to start watching exchange rates.
+              Use the add action to start watching exchange rates.
             </p>
           </CardHeader>
         </Card>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { Trash2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -74,13 +75,13 @@ export function RateGroup({ base, pairs, onRemove }: RateGroupProps) {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
+                      size="icon-sm"
                       aria-label={`Remove ${pair.base} to ${pair.target}`}
                       onClick={() => {
                         void onRemove(pair)
                       }}
                     >
-                      Remove
+                      <Trash2Icon />
                     </Button>
                   </div>
                 </div>

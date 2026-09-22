@@ -21,6 +21,7 @@ vi.mock("@tanstack/react-router-devtools", () => ({
   TanStackRouterDevtoolsPanel: () => null,
 }))
 
+import { DashboardLoading } from "@/components/dashboard/dashboard"
 import { getRouter } from "@/router"
 import { Route } from "@/routes/index"
 
@@ -30,6 +31,13 @@ afterEach(() => {
 })
 
 describe("currency catalog route", () => {
+  it("announces the watchlist loading state", () => {
+    render(<DashboardLoading />)
+
+    expect(
+      screen.getByRole("status", { name: "Loading your watchlist…" })
+    ).toBeTruthy()
+  })
   it("loads the same currency query options used by the dashboard", async () => {
     const queryOptions = { queryKey: ["currencies"] }
     const ensureQueryData = vi.fn().mockResolvedValue(undefined)

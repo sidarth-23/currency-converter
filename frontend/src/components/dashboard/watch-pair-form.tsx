@@ -1,9 +1,11 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
+import { Dialog } from "@base-ui/react/dialog"
 import { useForm } from "@tanstack/react-form"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
+import { PlusIcon, XIcon } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -65,6 +67,7 @@ export function createWatchPairSchema(pairs: readonly WatchPair[]) {
 }
 
 export function WatchPairForm({ options, pairs, onAdd }: WatchPairFormProps) {
+  const [open, setOpen] = useState(false)
   const schema = useMemo(() => createWatchPairSchema(pairs), [pairs])
   const form = useForm({
     defaultValues: defaultWatchPair(options),
@@ -74,99 +77,167 @@ export function WatchPairForm({ options, pairs, onAdd }: WatchPairFormProps) {
     },
     onSubmit: async ({ value }) => {
       await onAdd(value)
+      setOpen(false)
     },
   })
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add a pair</CardTitle>
-        <CardDescription>
-          Track one quote currency against a base.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="grid gap-4 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <form.Field name="base">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor="base-currency">Base currency</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value) => {
-                    if (value !== null) {
-                      field.handleChange(value)
-                    }
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger
+        render={
+          <Button
+            type="button"
+            size="icon-lg"
+            className="fixed right-6 bottom-6 z-40 rounded-full shadow-lg sm:right-8"
+            aria-label="Add currency pair"
+          />
+        }
+      >
+        <PlusIcon />
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[1px]" />
+        <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <Dialog.Popup className="w-full max-w-lg outline-none">
+            <Card>
+              <CardHeader className="relative">
+                <Dialog.Title render={<CardTitle />}>Add a pair</Dialog.Title>
+                <Dialog.Description render={<CardDescription />}>
+                  Track one quote currency against a base.
+                </Dialog.Description>
+                <Dialog.Close
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute top-4 right-4"
+                      aria-label="Close add pair dialog"
+                    />
+                  }
+                >
+                  <XIcon />
+                </Dialog.Close>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="grid gap-4"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    void form.handleSubmit()
                   }}
                 >
-                  <SelectTrigger id="base-currency" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {options.map((option) => (
-                      <SelectItem key={option.code} value={option.code}>
-                        {option.code} — {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-          </form.Field>
-          <span
-            className="hidden pb-2 text-center text-muted-foreground sm:block"
-            aria-hidden="true"
-          >
-            →
-          </span>
-          <form.Field name="target">
-            {(field) => (
-              <Field
-                data-invalid={field.state.meta.errors.length > 0 || undefined}
-              >
-                <FieldLabel htmlFor="target-currency">
-                  Target currency
-                </FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value) => {
-                    if (value !== null) {
-                      field.handleChange(value)
-                    }
-                  }}
-                >
-                  <SelectTrigger id="target-currency" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {options.map((option) => (
-                      <SelectItem key={option.code} value={option.code}>
-                        {option.code} — {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError errors={field.state.meta.errors} />
-              </Field>
-            )}
-          </form.Field>
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                Add pair
-              </Button>
-            )}
-          </form.Subscribe>
-        </form>
-      </CardContent>
-    </Card>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
+                    <form.Field name="base">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor="base-currency">
+                            Base currency
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(value) => {
+                              if (value !== null) {
+                                field.handleChange(value)
+                              }
+                            }}
+                          >
+                            <SelectTrigger
+                              id="base-currency"
+                              className="w-full"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {options.map((option) => (
+                                <SelectItem
+                                  key={option.code}
+                                  value={option.code}
+                                >
+                                  <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground">
+                                    {option.code}
+                                  </kbd>
+                                  <span>{option.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+                    <span
+                      className="hidden pb-2 text-center text-muted-foreground sm:block"
+                      aria-hidden="true"
+                    >
+                      →
+                    </span>
+                    <form.Field name="target">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor="target-currency">
+                            Target currency
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(value) => {
+                              if (value !== null) {
+                                field.handleChange(value)
+                              }
+                            }}
+                          >
+                            <SelectTrigger
+                              id="target-currency"
+                              className="w-full"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {options.map((option) => (
+                                <SelectItem
+                                  key={option.code}
+                                  value={option.code}
+                                >
+                                  <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground">
+                                    {option.code}
+                                  </kbd>
+                                  <span>{option.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+                    <form.Subscribe
+                      selector={(state) => [
+                        state.canSubmit,
+                        state.isSubmitting,
+                      ]}
+                    >
+                      {([canSubmit, isSubmitting]) => (
+                        <Button
+                          type="submit"
+                          disabled={!canSubmit || isSubmitting}
+                        >
+                          Add pair
+                        </Button>
+                      )}
+                    </form.Subscribe>
+                  </div>
+                  <form.Field name="target">
+                    {(field) => (
+                      <FieldError
+                        className="border-t border-border pt-4"
+                        errors={field.state.meta.errors}
+                      />
+                    )}
+                  </form.Field>
+                </form>
+              </CardContent>
+            </Card>
+          </Dialog.Popup>
+        </Dialog.Viewport>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
