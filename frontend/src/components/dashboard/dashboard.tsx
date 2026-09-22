@@ -26,6 +26,36 @@ const watchPairsQuery: MangoQuery<WatchPairDocument> = {
   sort: [{ base: "asc" }, { target: "asc" }],
 }
 
+type WatchlistHeaderProps = {
+  watchPairCount?: number
+}
+
+function WatchlistHeader({ watchPairCount }: WatchlistHeaderProps) {
+  return (
+    <header className="flex flex-col gap-3">
+      <p className="text-sm font-semibold tracking-[0.2em] text-primary uppercase">
+        Currency watcher
+      </p>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Keep an eye on your rates.
+          </h1>
+          <p className="mt-2 max-w-xl text-muted-foreground">
+            Choose currency pairs to follow. Rates refresh automatically while
+            your watchlist stays in this browser.
+          </p>
+        </div>
+        {watchPairCount === undefined ? null : (
+          <div className="rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
+            {watchPairCount} {watchPairCount === 1 ? "pair" : "pairs"} watched
+          </div>
+        )}
+      </div>
+    </header>
+  )
+}
+
 const watchlistLoadingCard = (
   <Card aria-busy="true">
     <CardHeader>
@@ -61,8 +91,21 @@ const watchlistLoadingCard = (
   </Card>
 )
 
+function WatchlistLoading() {
+  return (
+    <>
+      <WatchlistHeader />
+      {watchlistLoadingCard}
+    </>
+  )
+}
+
 export function DashboardLoading() {
-  return <DashboardShell>{watchlistLoadingCard}</DashboardShell>
+  return (
+    <DashboardShell>
+      <WatchlistLoading />
+    </DashboardShell>
+  )
 }
 
 export function DashboardUnavailable() {
@@ -96,7 +139,7 @@ export function Dashboard() {
 
   return (
     <DashboardShell>
-      <ClientOnly fallback={watchlistLoadingCard}>
+      <ClientOnly fallback={<WatchlistLoading />}>
         <Watchlist options={options} />
       </ClientOnly>
     </DashboardShell>
@@ -117,7 +160,7 @@ function Watchlist({ options }: WatchlistProps) {
   })
 
   if (databaseQuery.isPending || databaseQuery.data === undefined) {
-    return watchlistLoadingCard
+    return <WatchlistLoading />
   }
 
   if (databaseQuery.isError) {
@@ -168,25 +211,7 @@ function WatchlistContent({ database, options }: WatchlistContentProps) {
 
   return (
     <>
-      <header className="flex flex-col gap-3">
-        <p className="text-sm font-semibold tracking-[0.2em] text-primary uppercase">
-          Currency watcher
-        </p>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Keep an eye on your rates.
-            </h1>
-            <p className="mt-2 max-w-xl text-muted-foreground">
-              Choose currency pairs to follow. Rates refresh automatically while
-              your watchlist stays in this browser.
-            </p>
-          </div>
-          <div className="rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
-            {pairs.length} {pairs.length === 1 ? "pair" : "pairs"} watched
-          </div>
-        </div>
-      </header>
+      <WatchlistHeader watchPairCount={pairs.length} />
 
       <WatchPairForm
         options={options}

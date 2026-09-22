@@ -31,9 +31,14 @@ afterEach(() => {
 })
 
 describe("currency catalog route", () => {
-  it("announces the watchlist loading state", () => {
+  it("renders the dashboard heading without a watch count while loading", () => {
     render(<DashboardLoading />)
 
+    expect(screen.getByText("Currency watcher")).toBeTruthy()
+    expect(
+      screen.getByRole("heading", { name: "Keep an eye on your rates." })
+    ).toBeTruthy()
+    expect(screen.queryByText(/watched$/)).toBeNull()
     expect(
       screen.getByRole("status", { name: "Loading your watchlist…" })
     ).toBeTruthy()

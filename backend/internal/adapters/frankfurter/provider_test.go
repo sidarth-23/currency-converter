@@ -1,4 +1,4 @@
-package rates
+package frankfurter
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/example/currency-watcher/backend/internal/generated"
+	"github.com/example/currency-watcher/backend/internal/adapters/frankfurter/generated"
+	"github.com/example/currency-watcher/backend/internal/currency"
 )
 
-func TestFrankfurterFetcherUsesTypedRatesResponse(t *testing.T) {
+func TestProviderUsesTypedRatesResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("base") != "USD" || r.URL.Query().Get("quotes") != "EUR,SGD" {
 			t.Fatalf("unexpected query: %s", r.URL.RawQuery)
@@ -22,7 +23,7 @@ func TestFrankfurterFetcherUsesTypedRatesResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := NewFrankfurterFetcher(client).Fetch(context.Background(), "USD", []string{"EUR", "SGD"})
+	result, err := NewProvider(client).Fetch(context.Background(), "USD", []string{"EUR", "SGD"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestFrankfurterFetcherUsesTypedRatesResponse(t *testing.T) {
 	}
 }
 
-func TestFrankfurterFetcherRejectsUpstreamFailureAndMalformedRows(t *testing.T) {
+func TestProviderRejectsUpstreamFailureAndMalformedRows(t *testing.T) {
 	tests := []struct {
 		name string
 		body string
@@ -52,14 +53,14 @@ func TestFrankfurterFetcherRejectsUpstreamFailureAndMalformedRows(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := NewFrankfurterFetcher(client).Fetch(context.Background(), "USD", []string{"EUR", "SGD"}); err == nil {
+			if _, err := NewProvider(client).Fetch(context.Background(), "USD", []string{"EUR", "SGD"}); err == nil {
 				t.Fatal("expected fetch error")
 			}
 		})
 	}
 }
 
-func TestFrankfurterFetcherFetchCurrencies(t *testing.T) {
+func TestProviderFetchCurrencies(t *testing.T) {
 	tests := []struct {
 		name    string
 		body    string
@@ -94,7 +95,7 @@ func TestFrankfurterFetcherFetchCurrencies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			currencies, err := NewFrankfurterFetcher(client).FetchCurrencies(context.Background())
+			currencies, err := NewProvider(client).FetchCurrencies(context.Background())
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected fetch error")
@@ -104,7 +105,7 @@ func TestFrankfurterFetcherFetchCurrencies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(currencies) != 2 || currencies[0] != (Currency{Code: "EUR", Name: "Euro"}) {
+			if len(currencies) != 2 || currencies[0] != (currency.Currency{Code: "EUR", Name: "Euro"}) {
 				t.Fatalf("unexpected currencies: %#v", currencies)
 			}
 		})

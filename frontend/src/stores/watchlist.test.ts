@@ -1,12 +1,11 @@
 import { afterAll, describe, expect, it, vi } from "vitest"
+import { addWatchPair, getWatchlistDatabase, removeWatchPair } from "./watchlist"
 
 vi.mock("rxdb/plugins/storage-dexie", async () => {
   // The hoisted mock must load the test-only adapter inside its factory.
   const { getRxStorageMemory } = await import("rxdb/plugins/storage-memory")
   return { getRxStorageDexie: getRxStorageMemory }
 })
-
-import { addWatchPair, getWatchlistDatabase, removeWatchPair } from "./watchlist"
 
 const database = await getWatchlistDatabase()
 

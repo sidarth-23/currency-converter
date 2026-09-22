@@ -22,8 +22,8 @@ variable "app_name" {
 }
 
 variable "app_port" {
-  type        = number
-  default     = 8080
+  type    = number
+  default = 8080
   validation {
     condition     = var.app_port > 0 && var.app_port < 65536
     error_message = "app_port must be a valid TCP port."
@@ -40,6 +40,6 @@ variable "github_repository" {
 }
 
 variable "github_branch" {
-  type        = string
-  default     = "main"
+  type    = string
+  default = "main"
 }

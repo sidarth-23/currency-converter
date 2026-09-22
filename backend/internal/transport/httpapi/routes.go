@@ -7,17 +7,17 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
-	"github.com/example/currency-watcher/backend/internal/rates"
+	"github.com/example/currency-watcher/backend/internal/currency"
 )
 
 // RateSource provides cached exchange rates to HTTP handlers.
 type RateSource interface {
-	Get(ctx context.Context, base string, targets []string) (map[string]rates.CachedRate, error)
+	Get(ctx context.Context, base string, targets []string) (map[string]currency.CachedRate, error)
 }
 
 // CurrencySource provides provider-supported currencies to HTTP handlers.
 type CurrencySource interface {
-	FetchCurrencies(ctx context.Context) ([]rates.Currency, error)
+	FetchCurrencies(ctx context.Context) ([]currency.Currency, error)
 }
 
 type HealthOutput struct {
@@ -55,8 +55,8 @@ type RatesOutput struct {
 }
 
 type CurrenciesOutput struct {
-	ContentType string           `header:"Content-Type"`
-	Body        []rates.Currency `json:"body"`
+	ContentType string              `header:"Content-Type"`
+	Body        []currency.Currency `json:"body"`
 }
 
 // NewAPI builds the service routes on the provided standard-library mux.

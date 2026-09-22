@@ -2,7 +2,7 @@ frontend/node_modules/
 frontend/.output/
 frontend/dist/
 frontend/src/routeTree.gen.ts
-backend/internal/generated/oas_*_gen.go
+backend/internal/adapters/frankfurter/generated/oas_*_gen.go
 frontend/src/lib/api/generated/
 backend/bin/
 backend/*.test

@@ -1,42 +1,34 @@
-package rates
+package frankfurter
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
-	"github.com/example/currency-watcher/backend/internal/generated"
+	"github.com/example/currency-watcher/backend/internal/adapters/frankfurter/generated"
+	"github.com/example/currency-watcher/backend/internal/currency"
 )
 
-// RateFetcher retrieves rates from an upstream provider.
-type RateFetcher interface {
-	Fetch(ctx context.Context, base string, targets []string) (map[string]float64, error)
-}
-
-// Currency is a provider-supported ISO currency.
-type Currency struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
-}
-
-// FrankfurterFetcher adapts the generated Frankfurter client to RateFetcher.
-type FrankfurterFetcher struct {
+// Provider adapts the generated Frankfurter client to currency.RateProvider.
+type Provider struct {
 	client *generated.Client
 }
 
-func NewFrankfurterFetcher(client *generated.Client) *FrankfurterFetcher {
-	return &FrankfurterFetcher{client: client}
+// NewProvider creates a provider backed by the generated Frankfurter client.
+func NewProvider(client *generated.Client) *Provider {
+	return &Provider{client: client}
 }
 
-func (f *FrankfurterFetcher) Fetch(ctx context.Context, base string, targets []string) (map[string]float64, error) {
-	if f == nil || f.client == nil {
+// Fetch retrieves rates for the requested base and targets.
+func (p *Provider) Fetch(ctx context.Context, base string, targets []string) (map[string]float64, error) {
+	if p == nil || p.client == nil {
 		return nil, fmt.Errorf("frankfurter client is nil")
 	}
 	params := generated.GetRatesParams{
 		Base:   generated.NewOptString(base),
 		Quotes: generated.NewOptString(strings.Join(targets, ",")),
 	}
-	result, err := f.client.GetRates(ctx, params)
+	result, err := p.client.GetRates(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("fetch frankfurter rates: %w", err)
 	}
@@ -67,11 +59,11 @@ func (f *FrankfurterFetcher) Fetch(ctx context.Context, base string, targets []s
 }
 
 // FetchCurrencies retrieves the active currencies supported by Frankfurter.
-func (f *FrankfurterFetcher) FetchCurrencies(ctx context.Context) ([]Currency, error) {
-	if f == nil || f.client == nil {
+func (p *Provider) FetchCurrencies(ctx context.Context) ([]currency.Currency, error) {
+	if p == nil || p.client == nil {
 		return nil, fmt.Errorf("frankfurter client is nil")
 	}
-	result, err := f.client.GetCurrencies(ctx, generated.GetCurrenciesParams{})
+	result, err := p.client.GetCurrencies(ctx, generated.GetCurrenciesParams{})
 	if err != nil {
 		return nil, fmt.Errorf("fetch frankfurter currencies: %w", err)
 	}
@@ -81,13 +73,15 @@ func (f *FrankfurterFetcher) FetchCurrencies(ctx context.Context) ([]Currency, e
 	}
 
 	seen := make(map[string]struct{}, len(*jsonResult))
-	currencies := make([]Currency, 0, len(*jsonResult))
+	currencies := make([]currency.Currency, 0, len(*jsonResult))
 	for _, row := range *jsonResult {
 		if _, exists := seen[row.IsoCode]; exists {
 			return nil, fmt.Errorf("fetch frankfurter currencies: duplicate code %q", row.IsoCode)
 		}
 		seen[row.IsoCode] = struct{}{}
-		currencies = append(currencies, Currency{Code: row.IsoCode, Name: row.Name})
+		currencies = append(currencies, currency.Currency{Code: row.IsoCode, Name: row.Name})
 	}
 	return currencies, nil
 }
+
+var _ currency.RateProvider = (*Provider)(nil)

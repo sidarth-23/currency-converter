@@ -12,7 +12,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
@@ -28,11 +27,11 @@ resource "aws_ecr_repository" "app" {
 
 resource "aws_ecr_lifecycle_policy" "app" {
   repository = aws_ecr_repository.app.name
-  policy = jsonencode({ rules = [{ rulePriority = 1, description = "Retain recent immutable SHA images", selection = { tagStatus = "tagged", tagPrefixList = ["sha-"], countType = "imageCountMoreThan", countNumber = 10 }, action = { type = "expire" } }] })
+  policy     = jsonencode({ rules = [{ rulePriority = 1, description = "Retain recent immutable SHA images", selection = { tagStatus = "tagged", tagPrefixList = ["sha-"], countType = "imageCountMoreThan", countNumber = 10 }, action = { type = "expire" } }] })
 }
 
 resource "aws_iam_role" "apprunner_ecr" {
-  name = "${local.name}-apprunner-ecr"
+  name               = "${local.name}-apprunner-ecr"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "build.apprunner.amazonaws.com" }, Action = "sts:AssumeRole" }] })
 }
 
@@ -43,7 +42,6 @@ resource "aws_iam_role_policy_attachment" "apprunner_ecr" {
 
 resource "aws_apprunner_service" "app" {
   service_name = local.name
-  auto_deployments_enabled = true
   source_configuration {
     auto_deployments_enabled = true
     authentication_configuration { access_role_arn = aws_iam_role.apprunner_ecr.arn }
@@ -53,8 +51,20 @@ resource "aws_apprunner_service" "app" {
       image_configuration { port = tostring(var.app_port) }
     }
   }
-  health_check_configuration { protocol = "HTTP", path = "/api/health", interval = 10, timeout = 5, healthy_threshold = 1, unhealthy_threshold = 5 }
-  instance_configuration { cpu = "1 vCPU", memory = "2 GB" }
+  health_check_configuration {
+    protocol            = "HTTP"
+    path                = "/api/health"
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 1
+    unhealthy_threshold = 5
+  }
+
+  instance_configuration {
+    cpu    = "1 vCPU"
+    memory = "2 GB"
+  }
+  depends_on = [aws_iam_role_policy_attachment.apprunner_ecr]
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -64,10 +74,10 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name = "${local.name}-github-actions"
+  name               = "${local.name}-github-actions"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.github.arn }, Action = "sts:AssumeRoleWithWebIdentity", Condition = { StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }, StringLike = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:ref:refs/heads/${var.github_branch}" } } }] })
   inline_policy {
-    name = "publish-ecr"
+    name   = "publish-ecr"
     policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["ecr:GetAuthorizationToken"], Resource = "*" }, { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload", "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart"], Resource = aws_ecr_repository.app.arn }] })
   }
 }

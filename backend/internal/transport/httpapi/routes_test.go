@@ -9,31 +9,31 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/currency-watcher/backend/internal/rates"
+	"github.com/example/currency-watcher/backend/internal/currency"
 )
 
 type fakeRateSource struct {
-	rates map[string]rates.CachedRate
+	rates map[string]currency.CachedRate
 	err   error
 }
 
-func (f fakeRateSource) Get(context.Context, string, []string) (map[string]rates.CachedRate, error) {
+func (f fakeRateSource) Get(context.Context, string, []string) (map[string]currency.CachedRate, error) {
 	return f.rates, f.err
 }
 
 type fakeCurrencySource struct {
-	currencies []rates.Currency
+	currencies []currency.Currency
 	err        error
 }
 
-func (f fakeCurrencySource) FetchCurrencies(context.Context) ([]rates.Currency, error) {
+func (f fakeCurrencySource) FetchCurrencies(context.Context) ([]currency.Currency, error) {
 	return f.currencies, f.err
 }
 
 func TestHealthAndRatesRoutes(t *testing.T) {
 	expiresAt := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
 	mux := http.NewServeMux()
-	NewAPI(mux, fakeRateSource{rates: map[string]rates.CachedRate{
+	NewAPI(mux, fakeRateSource{rates: map[string]currency.CachedRate{
 		"EUR": {Rate: 0.85, ExpiresAt: expiresAt},
 		"SGD": {Rate: 1.35, ExpiresAt: expiresAt},
 	}}, fakeCurrencySource{})
@@ -71,7 +71,7 @@ func TestRatesValidationAndUpstreamError(t *testing.T) {
 		"base=USD&targets=",
 	} {
 		mux := http.NewServeMux()
-		NewAPI(mux, fakeRateSource{rates: map[string]rates.CachedRate{"EUR": {Rate: 0.85}}}, fakeCurrencySource{})
+		NewAPI(mux, fakeRateSource{rates: map[string]currency.CachedRate{"EUR": {Rate: 0.85}}}, fakeCurrencySource{})
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/rates?"+query, nil))
 		if response.Code != http.StatusUnprocessableEntity {
@@ -90,7 +90,7 @@ func TestRatesValidationAndUpstreamError(t *testing.T) {
 
 func TestCurrenciesRoute(t *testing.T) {
 	mux := http.NewServeMux()
-	NewAPI(mux, fakeRateSource{}, fakeCurrencySource{currencies: []rates.Currency{
+	NewAPI(mux, fakeRateSource{}, fakeCurrencySource{currencies: []currency.Currency{
 		{Code: "EUR", Name: "Euro"},
 	}})
 	response := httptest.NewRecorder()

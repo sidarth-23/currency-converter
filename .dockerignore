@@ -1,4 +1,4 @@
 *
 !backend/
 !backend/**
-backend/internal/generated/oas_*_gen.go
+backend/internal/adapters/frankfurter/generated/oas_*_gen.go
